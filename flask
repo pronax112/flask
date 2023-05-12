@@ -1,0 +1,42 @@
+import os
+from flask import Flask, request, redirect, url_for, send_file
+from flask_uploads import UploadSet, configure_uploads, ALL
+
+# Initialize Flask application
+app = Flask(__name__)
+
+# Configure file upload settings
+app.config['UPLOADED_FILES_DEST'] = 'uploads'
+app.config['UPLOADED_FILES_ALLOW'] = ALL
+uploaded_files = UploadSet('files', ALL)
+configure_uploads(app, uploaded_files)
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST' and 'file' in request.files:
+        # Save uploaded file to server
+        filename = uploaded_files.save(request.files['file'])
+        return redirect(url_for('uploaded_file', filename=filename))
+    else:
+        return '''
+            <!doctype html>
+            <html>
+                <body>
+                    <h1>File Upload Example</h1>
+                    <form method=post enctype=multipart/form-data>
+                        <input type=file name=file>
+                        <input type=submit value=Upload>
+                    </form>
+                </body>
+            </html>
+        '''
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    # Download file from server
+    path = uploaded_files.path(filename)
+    return send_file(path, as_attachment=True)
+
+if __name__ == '__main__':
+    # Start Flask web server
+    app.run(port=5000, debug=True)
